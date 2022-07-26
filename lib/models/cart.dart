@@ -25,6 +25,7 @@ class Cart with ChangeNotifier {
 
   void addItem(Product product) {
     if (_items.containsKey(product.id)) {
+      debugPrint('increment quantidade');
       _items.update(
         product.id,
         (existingItem) => CartItem(

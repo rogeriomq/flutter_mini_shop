@@ -16,6 +16,8 @@ class OrderList with ChangeNotifier {
   }
 
   void addOrder(Cart cart) {
+    if (cart.itemsCount == 0) return;
+
     _items.insert(
       0,
       Order(

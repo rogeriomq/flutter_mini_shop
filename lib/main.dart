@@ -32,12 +32,15 @@ class MyApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
-        title: 'Flutter Demo',
+        title: 'Mini Shop',
         theme: ThemeData(
           fontFamily: 'Lato',
+          primaryColor: Colors.purple,
           colorScheme: ColorScheme.fromSwatch(
             primarySwatch: Colors.purple,
-          ).copyWith(secondary: Colors.deepOrange),
+          ).copyWith(
+            secondary: Colors.deepOrange,
+          ),
         ),
         // home: ProductsOverviewPage(),
         routes: {
