@@ -17,6 +17,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
   final _formKey = GlobalKey<FormState>();
   final _formData = <String, Object>{};
 
+  bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -56,16 +58,37 @@ class _ProductFormPageState extends State<ProductFormPage> {
     setState(() {});
   }
 
-  void _submitForm() {
+  Future<void> _submitForm() async {
     final isValid = _formKey.currentState?.validate() ?? false;
     if (!isValid) return;
     _formKey.currentState?.save();
-
-    Provider.of<ProductList>(
-      context,
-      listen: false,
-    ).saveProductFromData(_formData);
-    Navigator.of(context).pop();
+    setState(() => _isLoading = true);
+    try {
+      await Provider.of<ProductList>(
+        context,
+        listen: false,
+      ).saveProductFromData(_formData);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+    } catch (error) {
+      debugPrint(error.toString());
+      // Await on showDialog is necessary for await show And actions of the Alert
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Wops!'),
+          content: const Text('Error on Save product, try again'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Ok'),
+            )
+          ],
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -80,113 +103,113 @@ class _ProductFormPageState extends State<ProductFormPage> {
           )
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(15),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              TextFormField(
-                initialValue: _formData['name']?.toString(),
-                decoration: const InputDecoration(labelText: 'Name:'),
-                textInputAction: TextInputAction.next,
-                onFieldSubmitted: (_) {
-                  FocusScope.of(context).requestFocus(_priceFocus);
-                },
-                validator: (value) {
-                  final name = value ?? '';
-                  if (name.trim().isEmpty) return 'Name is required!';
-                  if (name.trim().length < 2) {
-                    return 'Name needs at least 3 letters.';
-                  }
-                  return null;
-                },
-                onSaved: (newValue) => _formData['name'] = newValue ?? '',
-              ),
-              TextFormField(
-                initialValue: _formData['price']?.toString(),
-                decoration: const InputDecoration(labelText: 'Price:'),
-                textInputAction: TextInputAction.next,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                focusNode: _priceFocus,
-                onFieldSubmitted: (_) {
-                  FocusScope.of(context).requestFocus(_descriptionFocus);
-                },
-                onSaved: (newValue) {
-                  _formData['price'] = double.parse(newValue ?? '0.0');
-                },
-                validator: (value) {
-                  final priceString = value ?? '';
-                  final price = double.tryParse(priceString) ?? -1;
-
-                  if (price <= 0) return 'Please enter a valid price!';
-
-                  return null;
-                },
-              ),
-              TextFormField(
-                initialValue: _formData['description']?.toString(),
-                decoration: const InputDecoration(labelText: 'Description:'),
-                keyboardType: TextInputType.multiline,
-                focusNode: _descriptionFocus,
-                maxLines: 3,
-                textInputAction: TextInputAction.newline,
-                onSaved: (newValue) =>
-                    _formData['description'] = newValue ?? '',
-              ),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      decoration:
-                          const InputDecoration(labelText: 'Image URL:'),
-                      keyboardType: TextInputType.url,
-                      focusNode: _imageUrlFocus,
-                      textInputAction: TextInputAction.done,
-                      controller: _imageUrlController,
-                      onSaved: (newValue) =>
-                          _formData['imageUrl'] = newValue ?? '',
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(),
+            )
+          : Padding(
+              padding: const EdgeInsets.all(15),
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  children: [
+                    TextFormField(
+                      initialValue: _formData['name']?.toString(),
+                      decoration: const InputDecoration(labelText: 'Name:'),
+                      textInputAction: TextInputAction.next,
                       onFieldSubmitted: (_) {
-                        _submitForm();
+                        FocusScope.of(context).requestFocus(_priceFocus);
+                      },
+                      validator: (value) {
+                        final name = value ?? '';
+                        if (name.trim().isEmpty) return 'Name is required!';
+                        if (name.trim().length < 2) {
+                          return 'Name needs at least 3 letters.';
+                        }
+                        return null;
+                      },
+                      onSaved: (newValue) => _formData['name'] = newValue ?? '',
+                    ),
+                    TextFormField(
+                      initialValue: _formData['price']?.toString(),
+                      decoration: const InputDecoration(labelText: 'Price:'),
+                      textInputAction: TextInputAction.next,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      focusNode: _priceFocus,
+                      onFieldSubmitted: (_) {
+                        FocusScope.of(context).requestFocus(_descriptionFocus);
+                      },
+                      onSaved: (newValue) {
+                        _formData['price'] = double.parse(newValue ?? '0.0');
+                      },
+                      validator: (value) {
+                        final priceString = value ?? '';
+                        final price = double.tryParse(priceString) ?? -1;
+
+                        if (price <= 0) return 'Please enter a valid price!';
+
+                        return null;
                       },
                     ),
-                  ),
-                  Container(
-                    height: 100,
-                    width: 100,
-                    margin: const EdgeInsets.only(
-                      top: 10,
-                      left: 10,
+                    TextFormField(
+                      initialValue: _formData['description']?.toString(),
+                      decoration:
+                          const InputDecoration(labelText: 'Description:'),
+                      keyboardType: TextInputType.multiline,
+                      focusNode: _descriptionFocus,
+                      maxLines: 3,
+                      textInputAction: TextInputAction.newline,
+                      onSaved: (newValue) =>
+                          _formData['description'] = newValue ?? '',
                     ),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      border: Border.all(
-                        color: Colors.grey,
-                        width: 1,
-                      ),
-                      borderRadius: const BorderRadius.all(
-                        Radius.circular(20),
-                      ),
-                    ),
-                    alignment: Alignment.center,
-                    child: _imageUrlController.text.isEmpty
-                        ? const Text('Image Preview!')
-                        : FittedBox(
-                            fit: BoxFit.cover,
-                            alignment: Alignment.center,
-                            clipBehavior: Clip.none,
-                            child: Image.network(_imageUrlController.text),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            decoration:
+                                const InputDecoration(labelText: 'Image URL:'),
+                            keyboardType: TextInputType.url,
+                            focusNode: _imageUrlFocus,
+                            textInputAction: TextInputAction.done,
+                            controller: _imageUrlController,
+                            onSaved: (newValue) =>
+                                _formData['imageUrl'] = newValue ?? '',
+                            onFieldSubmitted: (_) {
+                              _submitForm();
+                            },
                           ),
-                  ),
-                ],
-              )
-            ],
-          ),
-        ),
-      ),
+                        ),
+                        Container(
+                          height: 100,
+                          width: 100,
+                          margin: const EdgeInsets.only(
+                            top: 10,
+                            left: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            border: Border.all(
+                              color: Colors.grey,
+                              width: 1,
+                            ),
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(20),
+                            ),
+                          ),
+                          alignment: Alignment.center,
+                          child: _imageUrlController.text.isEmpty
+                              ? const Text('Image Preview!')
+                              : Image.network(_imageUrlController.text),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+              ),
+            ),
     );
   }
 }
