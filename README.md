@@ -7,6 +7,8 @@ Flutter project for component studies and setting with the dart language and Flu
 - Form;
 - Form validation;
 - CRUD in memory(provider);
+- HTTP request;
+- CRUD on Firebase;
 
 **And lots of fun;**
 
